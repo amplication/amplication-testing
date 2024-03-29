@@ -1,0 +1,71 @@
+name: Data Service Generator E2E Test
+
+on:
+  # schedule:
+  #   - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      ecr_tag:
+        description: 'ECR container tag'
+        required: true
+        default: 'next'
+
+jobs:
+  build-and-run-generated-code:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCOUNT_OPS_ID: ${{ secrets.AWS_ACCOUNT_OPS_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "package.json"
+          cache: "npm"
+          cache-dependency-path: "package.lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # - name: create the input json for each test case by calling the main.ts
+      #   run: |
+      #     node main.ts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Run container
+        run: |
+          docker run -v $(pwd):/data --env-file ./dsg.env \
+          -e BUILD_SPEC_PATH=/data/test-cases/base-no-auth/input.json \
+          -e BUILD_OUTPUT_PATH=/data/test-cases/base-no-auth/generated \
+          -w /workspace/packages/data-service-generator \
+          ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ github.event.inputs.ecr_tag }} \
+          sh -c "node ./src/main.js"
+
+      - name: Check if directory exists
+        run: |
+          if [ ! -d ./test-cases/base-no-auth/generated/ ]; then
+            echo "Directory ./test-cases/base-no-auth/generated/ does not exist."
+            exit 1
+          fi
+
+      - name: Run generated code
+        run: |
+          cd ./test-cases/base-no-auth/generated/server
+          npm install
+          npm run prisma:generate
+          npm run db:init
+          npm run compose:up
+
+      - name: Run e2e tests
+        run: npm run e2e:test
