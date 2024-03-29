@@ -1,2 +1,3 @@
 node_modules/
 test-cases/**/generated/
+.DS_Store
