@@ -91,12 +91,9 @@ describe("Data Service Generator", () => {
         cache: new InMemoryCache(),
       });
 
-      console.log("Waiting for db migration to be completed...");
-      let startTime = Date.now();
-
       console.log("Waiting for server to be ready...");
       let servicesNotReady = true;
-      startTime = Date.now();
+      let startTime = Date.now();
       do {
         console.log("...");
         try {
