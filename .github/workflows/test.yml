@@ -11,8 +11,27 @@ on:
         default: 'next'
 
 jobs:
+  prepare-test-cases:
+      runs-on: ubuntu-latest
+      outputs:
+        matrix:  ${{ steps.set-test-cases.outputs.test-cases }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - id: set-test-cases
+          name: Generate matrix for test cases
+          run: |
+            echo "test-cases=$(find test-cases -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+
   build-and-run-generated-code:
     runs-on: ubuntu-latest
+    needs: prepare-test-cases
+    strategy:
+      fail-fast: false
+      matrix:
+        test-case: ${{fromJson(needs.prepare-test-cases.outputs.test-cases)}}
     env:
       AWS_ACCOUNT_OPS_ID: ${{ secrets.AWS_ACCOUNT_OPS_ID }}
     steps:
@@ -29,10 +48,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # - name: create the input json for each test case by calling the main.ts
-      #   run: |
-      #     node main.ts
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -45,23 +60,23 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -v $(pwd):/data --env-file ./dsg.env \
-          -e BUILD_SPEC_PATH=/data/test-cases/base-no-auth/input.json \
-          -e BUILD_OUTPUT_PATH=/data/test-cases/base-no-auth/generated \
+          docker run -v ${{ github.workspace }}:/data --env-file ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/dsg.env \
+          -e BUILD_SPEC_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/input.json \
+          -e BUILD_OUTPUT_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated \
           -w /workspace/packages/data-service-generator \
           ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ github.event.inputs.ecr_tag }} \
           sh -c "node ./src/main.js"
 
       - name: Check if directory exists
         run: |
-          if [ ! -d ./test-cases/base-no-auth/generated/ ]; then
-            echo "Directory ./test-cases/base-no-auth/generated/ does not exist."
+          if [ ! -d ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ ]; then
+            echo "Directory ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ does not exist."
             exit 1
           fi
 
       - name: Run generated code
         run: |
-          cd ./test-cases/base-no-auth/generated/server
+          cd ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/server
           npm install
           npm run prisma:generate
           npm run db:init
@@ -69,3 +84,5 @@ jobs:
 
       - name: Run e2e tests
         run: npm run e2e:test
+        working-directory: ${{ github.workspace }}
+
