@@ -14,6 +14,8 @@ import { omit } from "lodash";
 import env from "../test-data/env";
 import { v4 } from "uuid";
 
+const SERVER_START_TIMEOUT = 30000;
+
 const JSON_MIME = "application/json";
 const STATUS_OK = 200;
 const STATUS_NO_CONTENT = 204;
@@ -89,16 +91,30 @@ describe("Data Service Generator", () => {
         cache: new InMemoryCache(),
       });
 
-      try {
-        const res = await fetch(`${host}/api/_health/live`, {
-          method: "GET",
-        });
-        if (res.status === STATUS_NO_CONTENT) {
-          console.log("server is running");
+      console.log("Waiting for db migration to be completed...");
+      let startTime = Date.now();
+
+      console.log("Waiting for server to be ready...");
+      let servicesNotReady = true;
+      startTime = Date.now();
+      do {
+        console.log("...");
+        try {
+          const res = await fetch(`${host}/api/_health/live`, {
+            method: "GET",
+          });
+          if (res.status === STATUS_NO_CONTENT) {
+            servicesNotReady = false;
+            console.log("server ready!");
+            break;
+          }
+        } catch (error) {
+          /**/
         }
-      } catch (error) {
-        console.error("server failed to run", error);
-      }
+      } while (
+        servicesNotReady ||
+        startTime + SERVER_START_TIMEOUT < Date.now()
+      );
     });
 
     it("check /api/health/live endpoint", async () => {
