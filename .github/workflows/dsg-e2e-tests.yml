@@ -1,0 +1,88 @@
+name: Data Service Generator E2E Test
+
+on:
+  # schedule:
+  #   - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      ecr_tag:
+        description: 'ECR container tag'
+        required: true
+        default: 'next'
+
+jobs:
+  prepare-test-cases:
+      runs-on: ubuntu-latest
+      outputs:
+        matrix:  ${{ steps.set-test-cases.outputs.test-cases }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - id: set-test-cases
+          name: Generate matrix for test cases
+          run: |
+            echo "test-cases=$(find test-cases -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+
+  build-and-run-generated-code:
+    runs-on: ubuntu-latest
+    needs: prepare-test-cases
+    strategy:
+      fail-fast: false
+      matrix:
+        test-case: ${{fromJson(needs.prepare-test-cases.outputs.test-cases)}}
+    env:
+      AWS_ACCOUNT_OPS_ID: ${{ secrets.AWS_ACCOUNT_OPS_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "package.json"
+          cache: "npm"
+          cache-dependency-path: "package.lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Run container
+        run: |
+          docker run -v ${{ github.workspace }}:/data --env-file ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/dsg.env \
+          -e BUILD_SPEC_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/input.json \
+          -e BUILD_OUTPUT_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated \
+          -w /workspace/packages/data-service-generator \
+          ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ github.event.inputs.ecr_tag }} \
+          sh -c "node ./src/main.js"
+
+      - name: Check if directory exists
+        run: |
+          if [ ! -d ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ ]; then
+            echo "Directory ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ does not exist."
+            exit 1
+          fi
+
+      - name: Run generated code
+        run: |
+          cd ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/server
+          npm install
+          npm run prisma:generate
+          npm run db:init
+          npm run compose:up
+
+      - name: Run e2e tests
+        run: npm run e2e:test
+        working-directory: ${{ github.workspace }}
+
