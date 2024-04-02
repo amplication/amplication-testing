@@ -14,7 +14,7 @@ jobs:
   prepare-test-cases:
       runs-on: ubuntu-latest
       outputs:
-        matrix:  ${{ steps.set-test-cases.outputs.test-cases }}
+        test-cases:  ${{ steps.set-test-cases.outputs.test-cases }}
       steps:
         - name: Checkout
           uses: actions/checkout@v4
