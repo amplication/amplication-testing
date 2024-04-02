@@ -990,22 +990,22 @@
   "roles": [
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec40",
-      "createdAt": "2024-04-01T13:48:14.963Z",
-      "updatedAt": "2024-04-01T13:48:14.963Z",
+      "createdAt": "2024-04-02T11:41:19.539Z",
+      "updatedAt": "2024-04-02T11:41:19.539Z",
       "displayName": "User",
       "name": "user"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec41",
-      "createdAt": "2024-04-01T13:48:14.963Z",
-      "updatedAt": "2024-04-01T13:48:14.963Z",
+      "createdAt": "2024-04-02T11:41:19.539Z",
+      "updatedAt": "2024-04-02T11:41:19.539Z",
       "displayName": "Admin",
       "name": "admin"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec42",
-      "createdAt": "2024-04-01T13:48:14.963Z",
-      "updatedAt": "2024-04-01T13:48:14.963Z",
+      "createdAt": "2024-04-02T11:41:19.539Z",
+      "updatedAt": "2024-04-02T11:41:19.539Z",
       "displayName": "Area Manager",
       "name": "areaManager"
     }
@@ -1017,7 +1017,7 @@
     "id": "ckl0ow1xj00763cjnch10k6mc",
     "url": "https://app.amplication.com/ckl0ow1xj00763cjnch10k6mc",
     "settings": {
-      "resourceId": "",
+      "resourceId": "ckl0ow1xj00763cjnch10k6mc",
       "authProvider": "Http",
       "serverSettings": {
         "generateGraphQL": true,
