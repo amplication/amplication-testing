@@ -41,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "package.json"
+          node-version-file: "package.json"
           cache: "npm"
           cache-dependency-path: "package.lock.json"
 
