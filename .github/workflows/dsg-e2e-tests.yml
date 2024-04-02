@@ -81,7 +81,6 @@ jobs:
           npm install
           npm run prisma:generate
           npm run compose:up
-          npm run db:init
 
       - name: Run e2e tests
         run: npm run e2e:test
