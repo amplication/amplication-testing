@@ -79,8 +79,6 @@ jobs:
       - name: Run generated code
         run: |
           cd test-cases/${{ matrix.test-cases }}/generated/server
-          npm install
-          npm run prisma:generate
           npm run compose:up
 
       - name: Run e2e tests
