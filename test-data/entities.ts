@@ -104,7 +104,7 @@ const USER: Entity = {
       displayName: "Email",
       required: true,
       unique: true,
-      searchable: false,
+      searchable: true,
       dataType: EnumDataType.Email,
     },
     {
