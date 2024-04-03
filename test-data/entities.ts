@@ -103,7 +103,7 @@ const USER: Entity = {
       name: "email",
       displayName: "Email",
       required: true,
-      unique: false,
+      unique: true,
       searchable: false,
       dataType: EnumDataType.Email,
     },
@@ -370,7 +370,7 @@ const PROFILE: Entity = {
       dataType: EnumDataType.Email,
       properties: {},
       required: true,
-      unique: false,
+      unique: true,
       searchable: true,
     },
     // check 1:1 relation
@@ -739,7 +739,7 @@ const CUSTOMER: Entity = {
       dataType: EnumDataType.Email,
       properties: {},
       required: true,
-      unique: false,
+      unique: true,
       searchable: true,
     },
     {

@@ -77,7 +77,7 @@
           "name": "email",
           "displayName": "Email",
           "required": true,
-          "unique": false,
+          "unique": true,
           "searchable": false,
           "dataType": "Email"
         },
@@ -336,7 +336,7 @@
           "dataType": "Email",
           "properties": {},
           "required": true,
-          "unique": false,
+          "unique": true,
           "searchable": true
         },
         {
@@ -700,7 +700,7 @@
           "dataType": "Email",
           "properties": {},
           "required": true,
-          "unique": false,
+          "unique": true,
           "searchable": true
         },
         {
@@ -990,22 +990,22 @@
   "roles": [
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec40",
-      "createdAt": "2024-04-02T11:41:19.539Z",
-      "updatedAt": "2024-04-02T11:41:19.539Z",
+      "createdAt": "2024-04-03T09:40:01.466Z",
+      "updatedAt": "2024-04-03T09:40:01.466Z",
       "displayName": "User",
       "name": "user"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec41",
-      "createdAt": "2024-04-02T11:41:19.539Z",
-      "updatedAt": "2024-04-02T11:41:19.539Z",
+      "createdAt": "2024-04-03T09:40:01.466Z",
+      "updatedAt": "2024-04-03T09:40:01.466Z",
       "displayName": "Admin",
       "name": "admin"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec42",
-      "createdAt": "2024-04-02T11:41:19.539Z",
-      "updatedAt": "2024-04-02T11:41:19.539Z",
+      "createdAt": "2024-04-03T09:40:01.466Z",
+      "updatedAt": "2024-04-03T09:40:01.466Z",
       "displayName": "Area Manager",
       "name": "areaManager"
     }
