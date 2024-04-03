@@ -62,7 +62,7 @@ jobs:
           -e BUILD_SPEC_PATH=/data/test-cases/${{ matrix.test-cases }}/input.json \
           -e BUILD_OUTPUT_PATH=/data/test-cases/${{ matrix.test-cases }}/generated \
           -w /workspace/packages/data-service-generator \
-          ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ env.DSG_IMAGE_TAG }} \
+          ${{env.AWS_ACCOUNT_OPS_ID}}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ env.DSG_IMAGE_TAG }} \
           sh -c "node ./src/main.js"
         env:
           AWS_ACCOUNT_OPS_ID: ${{ vars.AWS_ACCOUNT_OPS_ID }}
