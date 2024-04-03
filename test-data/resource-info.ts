@@ -21,7 +21,7 @@ export const resourceInfo: AppInfo = {
   id: "ckl0ow1xj00763cjnch10k6mc",
   url: "https://app.amplication.com/ckl0ow1xj00763cjnch10k6mc",
   settings: {
-    resourceId: "",
+    resourceId: "ckl0ow1xj00763cjnch10k6mc",
     authProvider: EnumAuthProviderType.Http,
     serverSettings: {
       generateGraphQL: true,

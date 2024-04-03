@@ -31,15 +31,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-case: ${{fromJson(needs.prepare-test-cases.outputs.test-cases)}}
-    env:
-      AWS_ACCOUNT_OPS_ID: ${{ secrets.AWS_ACCOUNT_OPS_ID }}
+        test-cases: ${{fromJson(needs.prepare-test-cases.outputs.test-cases)}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version-file: "package.json"
           cache: "npm"
@@ -49,40 +47,41 @@ jobs:
         run: npm ci
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Run container
         run: |
-          docker run -v ${{ github.workspace }}:/data --env-file ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/dsg.env \
-          -e BUILD_SPEC_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/input.json \
-          -e BUILD_OUTPUT_PATH=${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated \
+          docker run -v ${pwd}:/data --env-file dsg.env \
+          -e BUILD_SPEC_PATH=/data/test-cases/${{ matrix.test-cases }}/input.json \
+          -e BUILD_OUTPUT_PATH=/data/test-cases/${{ matrix.test-cases }}/generated \
           -w /workspace/packages/data-service-generator \
-          ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ github.event.inputs.ecr_tag }} \
+          ${env.AWS_ACCOUNT_OPS_ID}.dkr.ecr.us-east-1.amazonaws.com/data-service-generator:${{ env.DSG_IMAGE_TAG }} \
           sh -c "node ./src/main.js"
+        env:
+          AWS_ACCOUNT_OPS_ID: ${{ vars.AWS_ACCOUNT_OPS_ID }}
+          DSG_IMAGE_TAG: ${{ github.event.inputs.ecr_tag }}
 
       - name: Check if directory exists
         run: |
-          if [ ! -d ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ ]; then
-            echo "Directory ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/ does not exist."
+          if [ ! -d test-cases/${{ matrix.test-cases }}/generated/ ]; then
+            echo "Directory test-cases/${{ matrix.test-cases }}/generated/ does not exist."
             exit 1
           fi
 
       - name: Run generated code
         run: |
-          cd ${{ github.workspace }}/test-cases/${{ matrix.test_case }}/generated/server
+          cd test-cases/${{ matrix.test-cases }}/generated/server
           npm install
           npm run prisma:generate
-          npm run db:init
           npm run compose:up
 
       - name: Run e2e tests
         run: npm run e2e:test
-        working-directory: ${{ github.workspace }}
 
