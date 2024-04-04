@@ -85,6 +85,10 @@ function handlePluginCases(plugins: PluginInstallation[]): DSGResourceData {
 
     mockedEntities = mockedEntities.map((entity) => {
       if (entity.name === authEntityName) {
+        const passwordField = entity.fields.find(
+          (field) => field.name === "password"
+        );
+        passwordField!.required = false;
         entity.fields.push(sessionIdField);
       }
       return entity;
