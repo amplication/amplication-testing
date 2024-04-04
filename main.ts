@@ -10,7 +10,6 @@ import {
   authBasic,
   postgres,
   authJWT,
-  auth0,
   authSAML,
   mysql,
 } from "./test-data/plugins";
@@ -26,19 +25,85 @@ import {
   EnumDataType,
   EnumResourceType,
 } from "@amplication/code-gen-types/src/models";
+import { cloneDeep } from "lodash";
 
 const pluginCombinations: Record<PluginCombinationName, PluginInstallation[]> =
   {
     [PluginCombinationName.POSTGRES_NO_AUTH]: [postgres],
     [PluginCombinationName.POSTGRES_BASIC]: [postgres, authCore, authBasic],
     [PluginCombinationName.POSTGRES_JWT]: [postgres, authCore, authJWT],
-    [PluginCombinationName.POSTGRES_AUTH0]: [postgres, authCore, auth0],
     [PluginCombinationName.POSTGRES_SAML]: [postgres, authSAML],
     [PluginCombinationName.MYSQL_NO_AUTH]: [mysql],
     [PluginCombinationName.MYSQL_BASIC]: [mysql, authCore, authBasic],
     [PluginCombinationName.MYSQL_JWT]: [mysql, authCore, authJWT],
-    [PluginCombinationName.MYSQL_AUTH0]: [mysql, authCore, auth0],
   };
+
+const baseDsgResourceData: DSGResourceData = {
+  buildId: "1",
+  entities,
+  roles,
+  resourceInfo,
+  resourceType: EnumResourceType.Service,
+  pluginInstallations:
+    pluginCombinations[PluginCombinationName.POSTGRES_NO_AUTH],
+  moduleActions: customActions,
+  moduleContainers,
+  moduleDtos,
+};
+
+function handlePluginCases(plugins: PluginInstallation[]): DSGResourceData {
+  let mockedEntities = cloneDeep(entities);
+  let mockedResourceInfo = cloneDeep(resourceInfo);
+  // remove entity field types that are not supported by mysql
+  if (plugins.some((plugin) => plugin === mysql)) {
+    console.log(
+      plugins,
+      "remove entity field types that are not supported by mysql"
+    );
+    mockedEntities = mockedEntities.map((entity) => {
+      entity.fields = entity.fields.filter(
+        (field) => field.dataType !== EnumDataType.MultiSelectOptionSet
+      );
+      return entity;
+    });
+  }
+
+  // when SAML is installed, add sessionId field to auth entity
+  if (plugins.some((plugin) => plugin === authSAML)) {
+    const authEntityName = resourceInfo.settings.authEntityName;
+    const sessionIdField = {
+      id: "22c4a27a-6490-4fb8-b951-7f42ded681bc",
+      permanentId: "22c4a27a-6490-4fb8-b951-7f42ded681b1",
+      name: "sessionId",
+      displayName: "sessionId",
+      dataType: EnumDataType.SingleLineText,
+      properties: {},
+      required: true,
+      unique: true,
+      searchable: false,
+    };
+
+    mockedEntities = mockedEntities.map((entity) => {
+      if (entity.name === authEntityName) {
+        entity.fields.push(sessionIdField);
+      }
+      return entity;
+    });
+  }
+
+  if (
+    !plugins.some((plugin) => plugin === authCore) &&
+    !plugins.some((plugin) => plugin === authSAML)
+  ) {
+    mockedResourceInfo.settings.authEntityName = "";
+  }
+
+  return {
+    ...baseDsgResourceData,
+    entities: mockedEntities,
+    resourceInfo: mockedResourceInfo,
+  };
+}
 
 /**
  * Generates test config for each test case from the plugin combinations
@@ -47,25 +112,16 @@ const pluginCombinations: Record<PluginCombinationName, PluginInstallation[]> =
  */
 function createTestConfig(): TestConfig[] {
   const results = Object.entries(pluginCombinations).map(([name, plugins]) => {
-    let mockEntities = entities;
-
-    // remove entity field types that are not supported by mysql
-    if (plugins.find((plugin) => plugin.npm.indexOf("plugin-db-mysql"))) {
-      mockEntities = entities.map((entity) => {
-        entity.fields = entity.fields.filter(
-          (field) => field.dataType !== EnumDataType.MultiSelectOptionSet
-        );
-        return entity;
-      });
-    }
+    const { entities: changedEntities, resourceInfo: changedResourceInfo } =
+      handlePluginCases(plugins);
 
     return {
       name: name as PluginCombinationName,
       data: {
         buildId: "1",
-        entities: mockEntities,
+        entities: changedEntities,
         roles,
-        resourceInfo,
+        resourceInfo: changedResourceInfo,
         resourceType: EnumResourceType.Service,
         pluginInstallations: plugins,
         moduleActions: customActions,

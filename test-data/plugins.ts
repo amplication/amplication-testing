@@ -49,7 +49,7 @@ export const authJWT: PluginInstallation = {
 };
 
 export const auth0: PluginInstallation = {
-  id: "auth-jwt-id",
+  id: "auth-auth0-id",
   pluginId: "auth-auth0",
   npm: "@amplication/plugin-auth-auth0",
   enabled: true,
@@ -57,7 +57,7 @@ export const auth0: PluginInstallation = {
 };
 
 export const authSAML: PluginInstallation = {
-  id: "auth-jwt-id",
+  id: "auth-saml-id",
   pluginId: "auth-saml",
   npm: "@amplication/plugin-auth-saml",
   enabled: true,

@@ -160,6 +160,28 @@
           }
         },
         {
+          "id": "1a34cc0e-91dd-4ef2-b8eb-df5a44154a21",
+          "permanentId": "1a34cc0e-91dd-4ef2-b8eb-df5a44154a22",
+          "name": "interests",
+          "displayName": "Interests",
+          "required": true,
+          "unique": false,
+          "searchable": true,
+          "dataType": "MultiSelectOptionSet",
+          "properties": {
+            "options": [
+              {
+                "label": "Programming",
+                "value": "programming"
+              },
+              {
+                "label": "Design",
+                "value": "design"
+              }
+            ]
+          }
+        },
+        {
           "id": "daa757a6-4e15-4afc-a6e3-d4366d64367a",
           "permanentId": "daa757a6-4e15-4afc-a6e3-d4366d643671",
           "name": "priority",
@@ -804,6 +826,36 @@
           "searchable": true
         },
         {
+          "id": "e0d70a60-6a1c-47be-8687-2d07f3e93b0b",
+          "permanentId": "e0d70a60-6a1c-47be-8687-2d07f3e93b01",
+          "name": "favoriteColors",
+          "displayName": "Favorite Colors (multi-select)",
+          "dataType": "MultiSelectOptionSet",
+          "properties": {
+            "options": [
+              {
+                "label": "Red",
+                "value": "red"
+              },
+              {
+                "label": "Green",
+                "value": "green"
+              },
+              {
+                "label": "Purple",
+                "value": "purple"
+              },
+              {
+                "label": "yellow",
+                "value": "yellow"
+              }
+            ]
+          },
+          "required": false,
+          "unique": false,
+          "searchable": true
+        },
+        {
           "id": "b227bd7a-2fe5-47f8-8f3e-29a2c26104a8",
           "permanentId": "b227bd7a-2fe5-47f8-8f3e-29a2c26104a1",
           "name": "customerType",
@@ -990,22 +1042,22 @@
   "roles": [
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec40",
-      "createdAt": "2024-04-03T09:44:05.069Z",
-      "updatedAt": "2024-04-03T09:44:05.069Z",
+      "createdAt": "2024-04-03T15:19:38.667Z",
+      "updatedAt": "2024-04-03T15:19:38.667Z",
       "displayName": "User",
       "name": "user"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec41",
-      "createdAt": "2024-04-03T09:44:05.069Z",
-      "updatedAt": "2024-04-03T09:44:05.069Z",
+      "createdAt": "2024-04-03T15:19:38.667Z",
+      "updatedAt": "2024-04-03T15:19:38.667Z",
       "displayName": "Admin",
       "name": "admin"
     },
     {
       "id": "4da76cb1-46d0-4fd0-b81b-930c0ae5ec42",
-      "createdAt": "2024-04-03T09:44:05.069Z",
-      "updatedAt": "2024-04-03T09:44:05.069Z",
+      "createdAt": "2024-04-03T15:19:38.667Z",
+      "updatedAt": "2024-04-03T15:19:38.667Z",
       "displayName": "Area Manager",
       "name": "areaManager"
     }
@@ -1028,7 +1080,7 @@
         "generateAdminUI": true,
         "adminUIPath": ""
       },
-      "authEntityName": "User"
+      "authEntityName": ""
     },
     "codeGeneratorVersionOptions": {
       "codeGeneratorVersion": null,
