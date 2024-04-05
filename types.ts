@@ -6,11 +6,9 @@ enum DSGEnv {
 }
 
 export enum PluginCombinationName {
-  POSTGRES_NO_AUTH = "postgres-no-auth",
   POSTGRES_BASIC = "postgres-basic",
   POSTGRES_JWT = "postgres-jwt",
   POSTGRES_SAML = "postgres-saml",
-  MYSQL_NO_AUTH = "mysql-no-auth",
   MYSQL_BASIC = "mysql-basic",
   MYSQL_JWT = "mysql-jwt",
 }

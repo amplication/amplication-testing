@@ -29,11 +29,9 @@ import { cloneDeep } from "lodash";
 
 const pluginCombinations: Record<PluginCombinationName, PluginInstallation[]> =
   {
-    [PluginCombinationName.POSTGRES_NO_AUTH]: [postgres],
     [PluginCombinationName.POSTGRES_BASIC]: [postgres, authCore, authBasic],
     [PluginCombinationName.POSTGRES_JWT]: [postgres, authCore, authJWT],
     [PluginCombinationName.POSTGRES_SAML]: [postgres, authSAML],
-    [PluginCombinationName.MYSQL_NO_AUTH]: [mysql],
     [PluginCombinationName.MYSQL_BASIC]: [mysql, authCore, authBasic],
     [PluginCombinationName.MYSQL_JWT]: [mysql, authCore, authJWT],
   };
@@ -44,8 +42,7 @@ const baseDsgResourceData: DSGResourceData = {
   roles,
   resourceInfo,
   resourceType: EnumResourceType.Service,
-  pluginInstallations:
-    pluginCombinations[PluginCombinationName.POSTGRES_NO_AUTH],
+  pluginInstallations: pluginCombinations[PluginCombinationName.POSTGRES_BASIC],
   moduleActions: customActions,
   moduleContainers,
   moduleDtos,
@@ -56,10 +53,6 @@ function handlePluginCases(plugins: PluginInstallation[]): DSGResourceData {
   let mockedResourceInfo = cloneDeep(resourceInfo);
   // remove entity field types that are not supported by mysql
   if (plugins.some((plugin) => plugin === mysql)) {
-    console.log(
-      plugins,
-      "remove entity field types that are not supported by mysql"
-    );
     mockedEntities = mockedEntities.map((entity) => {
       entity.fields = entity.fields.filter(
         (field) => field.dataType !== EnumDataType.MultiSelectOptionSet
