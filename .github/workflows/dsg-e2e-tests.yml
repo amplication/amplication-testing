@@ -76,11 +76,8 @@ jobs:
             exit 1
           fi
 
-      - name: Run generated code
-        run: |
-          cd test-cases/${{ matrix.test-cases }}/generated/server
-          docker-compose up -d
-
       - name: Run e2e tests
         run: npm run e2e:test
+        env:
+          TEST_CASE: ${{ matrix.test-cases }}
 
