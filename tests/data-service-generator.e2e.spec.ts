@@ -1,5 +1,3 @@
-import * as os from "os";
-import * as fs from "fs";
 import * as path from "path";
 import {
   ApolloClient,
@@ -12,19 +10,15 @@ import { onError } from "@apollo/client/link/error";
 import fetch from "cross-fetch";
 import { omit } from "lodash";
 import env from "../test-data/env";
-import { v4 } from "uuid";
-
-const SERVER_START_TIMEOUT = 30000;
+import { v2 as compose } from "docker-compose";
+import { getRandomPort } from "get-port-please";
 
 const JSON_MIME = "application/json";
 const STATUS_OK = 200;
-const STATUS_NO_CONTENT = 204;
 const STATUS_CREATED = 201;
 const NOT_FOUND = 404;
 
 const {
-  APP_HOST,
-  APP_PORT,
   APP_USERNAME,
   APP_PASSWORD,
   APP_DEFAULT_USER_ROLES,
@@ -42,23 +36,82 @@ const EXAMPLE_ORGANIZATION = {
   name: "Amplication",
 };
 
+const testCaseName = process.env.TEST_CASE || "postgres-basic";
+const verbose = process.env.VERBOSE ? true : false;
+const SERVER_START_TIMEOUT = 30000;
+
+function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
 describe("Data Service Generator", () => {
-  const host = `${APP_HOST}:${APP_PORT}`;
+  let host: string;
   let customer: { id: number };
   let apolloClient: ApolloClient<any>;
 
   describe("DSG E2E tests", () => {
-    const testId = v4();
-
     beforeAll(async () => {
-      const directory = path.join(os.tmpdir(), "test-data-service", testId);
-      // Clean the temporary directory
-      try {
-        await fs.promises.rm(directory, { recursive: true });
-      } catch {
-        /* empty */
-      }
-      await fs.promises.mkdir(directory, { recursive: true });
+      console.info("Setting up test environment...");
+      const dockerComposeDir = path.resolve(
+        __dirname,
+        `../test-cases/${testCaseName}/generated/server`
+      );
+      const dotEnvPath = path.join(dockerComposeDir, ".env");
+      const port = await getRandomPort();
+      const dbPort = await getRandomPort();
+      host = `localhost:${port}`;
+
+      const dockerComposeOptions: compose.IDockerComposeOptions = {
+        cwd: dockerComposeDir,
+        log: verbose,
+        composeOptions: [
+          `--project-name=${testCaseName}`,
+          `--env-file=${dotEnvPath}`,
+        ],
+        env: {
+          ...process.env,
+          PORT: String(port),
+          DB_PORT: String(dbPort),
+        },
+      };
+
+      console.info("Running docker-compose up");
+      await compose.downAll(dockerComposeOptions);
+      await compose.upAll({
+        ...dockerComposeOptions,
+        commandOptions: ["--build", "--force-recreate"],
+      });
+
+      compose
+        .logs([], {
+          ...dockerComposeOptions,
+          follow: true,
+        })
+        .catch(console.error);
+
+      console.info("Waiting for db migration to be completed...");
+      let migrationCompleted = false;
+      let startTime = Date.now();
+
+      do {
+        console.info("...");
+        const containers = await compose.ps({
+          ...dockerComposeOptions,
+          commandOptions: ["--all"],
+        });
+        const migrateContainer = containers.data.services.find((s) =>
+          s.name.endsWith("migrate-1")
+        );
+        if (migrateContainer?.state.indexOf("Exited (0)") !== -1) {
+          migrationCompleted = true;
+          console.info("migration completed!");
+          break;
+        }
+        await sleep(2000);
+      } while (
+        !migrationCompleted ||
+        startTime + SERVER_START_TIMEOUT < Date.now()
+      );
 
       const authLink = setContext((_, { headers }) => ({
         headers: {
@@ -90,28 +143,18 @@ describe("Data Service Generator", () => {
         link: authLink.concat(errorLink).concat(httpLink),
         cache: new InMemoryCache(),
       });
+    });
 
-      console.log("Waiting for server to be ready...");
-      let servicesNotReady = true;
-      let startTime = Date.now();
-      do {
-        console.log("...");
-        try {
-          const res = await fetch(`http://${host}/api/_health/live`, {
-            method: "GET",
-          });
-          if (res.status === STATUS_NO_CONTENT) {
-            servicesNotReady = false;
-            console.log("server ready!");
-            break;
-          }
-        } catch (error) {
-          /**/
-        }
-      } while (
-        servicesNotReady ||
-        startTime + SERVER_START_TIMEOUT < Date.now()
-      );
+    afterAll(async () => {
+      console.info("Tearing down test environment...");
+      const dockerComposeDir = path.resolve(__dirname, "../..");
+      const dockerComposeOptions: compose.IDockerComposeOptions = {
+        cwd: dockerComposeDir,
+        composeOptions: [`--project-name=${testCaseName}`],
+        commandOptions: ["-v"],
+      };
+
+      await compose.downAll(dockerComposeOptions);
     });
 
     it("check /api/health/live endpoint", async () => {
@@ -272,7 +315,10 @@ describe("Data Service Generator", () => {
               "Content-Type": JSON_MIME,
               Authorization: APP_BASIC_AUTHORIZATION,
             },
-            body: JSON.stringify(EXAMPLE_CUSTOMER),
+            body: JSON.stringify({
+              ...EXAMPLE_CUSTOMER,
+              email: "test-rest@test.com",
+            }),
           });
 
           const newCustomer = await newCustomerRes.json();
@@ -291,6 +337,7 @@ describe("Data Service Generator", () => {
             expect.objectContaining({
               ...EXAMPLE_CUSTOMER,
               id: expect.any(String),
+              email: "test-rest@test.com",
               createdAt: expect.any(String),
               updatedAt: expect.any(String),
             })
@@ -343,7 +390,10 @@ describe("Data Service Generator", () => {
                 }
               `,
               variables: {
-                data: EXAMPLE_CUSTOMER,
+                data: {
+                  ...EXAMPLE_CUSTOMER,
+                  email: `test-gql@example.com`,
+                },
               },
             });
             expect(resp).toEqual(
@@ -351,7 +401,7 @@ describe("Data Service Generator", () => {
                 data: {
                   createCustomer: expect.objectContaining({
                     id: expect.any(String),
-                    email: EXAMPLE_CUSTOMER.email,
+                    email: "test-gql@example.com",
                   }),
                 },
               })
@@ -373,7 +423,10 @@ describe("Data Service Generator", () => {
               "Content-Type": JSON_MIME,
               Authorization: APP_BASIC_AUTHORIZATION,
             },
-            body: JSON.stringify(EXAMPLE_CUSTOMER),
+            body: JSON.stringify({
+              ...EXAMPLE_CUSTOMER,
+              email: "test-org@post.com",
+            }),
           })
         ).json();
 
@@ -416,7 +469,10 @@ describe("Data Service Generator", () => {
               "Content-Type": JSON_MIME,
               Authorization: APP_BASIC_AUTHORIZATION,
             },
-            body: JSON.stringify(EXAMPLE_CUSTOMER),
+            body: JSON.stringify({
+              ...EXAMPLE_CUSTOMER,
+              email: "test-org@delete.com",
+            }),
           })
         ).json();
         const organization = await (
@@ -474,7 +530,10 @@ describe("Data Service Generator", () => {
               "Content-Type": JSON_MIME,
               Authorization: APP_BASIC_AUTHORIZATION,
             },
-            body: JSON.stringify(EXAMPLE_CUSTOMER),
+            body: JSON.stringify({
+              ...EXAMPLE_CUSTOMER,
+              email: "test-org@get.com",
+            }),
           })
         ).json();
         const organization = await (
@@ -521,6 +580,7 @@ describe("Data Service Generator", () => {
             expect.objectContaining({
               ...EXAMPLE_CUSTOMER,
               id: customer.id,
+              email: "test-org@get.com",
               createdAt: expect.any(String),
               updatedAt: expect.any(String),
               organization: {
